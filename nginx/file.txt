@@ -1,0 +1,11 @@
+Hello World!
+This is a simple text file.
+Filled with letters.
+
+Paragraphs.
+
+Numbers1234567890987654321.
+
+Symbols+_)(*&^%$#@!@#$%^&*()_+?><>?
+
+And that's all.
