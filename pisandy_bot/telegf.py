@@ -36,14 +36,14 @@ with open('SPI.txt', 'a') as file:
     file.write('SandyPI. Cleverbot conversation.\n')
  
 #Entering bots Telegram API key
-telekey = '439816740:AAGUv-uFga0Vf7XX9-yTPADabX6Eiuf_Bwg'
+telekey = 'YOUR API KEY'
 bot = telepot.Bot(telekey)
 
 #Getting bot specification
 bot.getMe()
 
 #Initializing the cleverbot
-cleverkey = '6c3f005ec8f79dd543c7cca772a75fa9'
+cleverkey = 'CLEVERBOT API KEY'
 cb = cleverbot.Cleverbot(cleverkey, timeout=60)
 cb.reset()
 
