@@ -31,9 +31,10 @@ sense = SenseHat()
 os.system('modprobe w1-gpio')
 os.system('modprobe w1-therm')
 
+#Not needed, as now there are different files
 #Entering first line of the log data
-with open('SPI.txt', 'a') as file:
-    file.write('SandyPI. Cleverbot conversation.\n')
+#with open('SPI.txt', 'a') as file:
+#    file.write('SandyPI. Cleverbot conversation.\n')
  
 #Entering bots Telegram API key
 telekey = 'YOUR API KEY'
