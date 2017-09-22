@@ -173,7 +173,7 @@ Third :     {} °C\n\
 Fourth :  {} °C\n\
 Fifth :      {} °C\n\
 \n\
-Humidity : {} %rH\n\
+Humidity : {} %rH\n\ 
 Pressure : {} Millibars'.\
         format(thermo[0], thermo[1], thermo[2], thermo[3], thermo[4], humidity, pressure))
     sms(ID, 'This bot is showing temperature, humidity and pressure of air \n\
