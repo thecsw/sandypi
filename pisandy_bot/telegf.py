@@ -34,7 +34,7 @@ os.system('modprobe w1-therm')
 #Entering first line of the log data
 with open('SPI.txt', 'a') as file:
     file.write('SandyPI. Cleverbot conversation.\n')
- 
+  
 #Entering bots Telegram API key
 telekey = '439816740:AAGUv-uFga0Vf7XX9-yTPADabX6Eiuf_Bwg'
 bot = telepot.Bot(telekey)
