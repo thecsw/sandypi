@@ -21,6 +21,8 @@ from sense_hat import SenseHat
 #Multiple function simultaneously
 #import threading
 import thread
+#RGB bulb
+import RPi.GPIO as GPIO
 
 #Initializing sensehat
 sense = SenseHat()
@@ -34,19 +36,33 @@ with open('SPI.txt', 'a') as file:
     file.write('SandyPI. Cleverbot conversation.\n')
  
 #Entering bots Telegram API key
-telekey = 'YOUR TELEGRAM BOT API KEY'
+telekey = '439816740:AAGUv-uFga0Vf7XX9-yTPADabX6Eiuf_Bwg'
 bot = telepot.Bot(telekey)
 
 #Getting bot specification
 bot.getMe()
 
 #Initializing the cleverbot
-cleverkey = 'YOUR CELVERBOT API BOT KEY'
+cleverkey = '6c3f005ec8f79dd543c7cca772a75fa9'
 cb = cleverbot.Cleverbot(cleverkey, timeout=60)
 cb.reset()
 
 #Array of sensors raw  data
 thermo = [0,0,0,0,0]
+
+#RGB
+BLUE = 21
+GREEN = 20
+RED = 16
+
+#GPIO setup
+GPIO.setmode(GPIO.BCM)
+GPIO.setwarnings(False)
+
+#OUTPUT
+GPIO.setup(RED, GPIO.OUT)
+GPIO.setup(GREEN, GPIO.OUT)
+GPIO.setup(BLUE, GPIO.OUT)
 
 #reading raw data from /sys/bus/w1/devices
 def read_temp_raw(ORDER):
@@ -59,10 +75,7 @@ def read_temp_raw(ORDER):
     return lines
 
 #Function to return temperature in celcius
-#When calling this number, the parameter will mean the nth temp sensor
-#that is in your directory
-#In this case I have 5, so 0, 1, 2, 3, 4
-def read_temp(NUMBER): 
+def read_temp(NUMBER):
     lines = read_temp_raw(NUMBER)
     while lines[0].strip()[-3:] != 'YES':
         #time.sleep(0.2)
@@ -82,8 +95,36 @@ rpoint = 10;
 #templimit
 sos = 30;
 
+#RGB Color function
+def OUTPUT (COLOR):
+    GPIO.output(BLUE, False)
+    GPIO.output(GREEN, False)
+    GPIO.output(RED, False)
+    GPIO.output(COLOR, True)
+    return
+
+#2way RGB
+def MULTOUTPUT (COLOR, COLORS):
+    GPIO.output(BLUE, False)
+    GPIO.output(GREEN, False)
+    GPIO.output(RED, False)
+    GPIO.output(COLOR, True)
+    GPIO.output(COLORS, True)
+    return
+
+def warning ():
+    aver = (thermo[0]+thermo[1]+thermo[2]+thermo[3]+thermo[4])/5
+    averround = pround(aver)
+    if averround < 30:
+	if averround > 26:
+            MULTOUTPUT(RED, GREEN)
+	    return	
+        OUTPUT(GREEN)
+	return
+    OUTPUT(RED)
+    return
+
 #SOS function
-#When some sensor is reposrting extremely high temp, like 30 degrees
 def sosf():
     global thermo
     for i in range (0, 5):
@@ -160,17 +201,17 @@ Have a nice day!' ))
     #HUMIDITY
     if command == '/gethumidity':
         try:
-            humidity = pround(sense.get_humidity())
-            thread.start_new_thread(sms, (user_id, 'Humidity : {} %rH'.format(humidity)))
+            #humidity = pround(sense.get_humidity())
+            thread.start_new_thread(sms, (user_id, 'Humidity : {} %rH'.format(pround(sense.get_humidity()))))
         except:
             print('Exception caught!')
-        return
+    	return
 
     #PRESSURE
     if command == '/getpressure':
         try:
-            pressure = pround(sense.get_pressure())
-            thread.start_new_thread(sms, (user_id, 'Pressure : {} Millibars'.format(pressure)))
+            #pressure = pround(sense.get_pressure())
+            thread.start_new_thread(sms, (user_id, 'Pressure : {} Millibars'.format(pround(sense.get_pressure()))))
         except:
             print('Exception caught!')
         return
@@ -192,8 +233,8 @@ Have a nice day!' ))
     #TIME
     if command == '/time':
         try:
-            now = datetime.now()
-            thread.start_new_thread(sms, (user_id, 'Time - {}:{}'.format(now.hour, now.minute)))
+            #now = datetime.now()
+            thread.start_new_thread(sms, (user_id, 'Time - {}:{}'.format(datetime.now().hour, datetime.now().minute)))
         except:
             print('Exception caught!')
         return
@@ -222,7 +263,7 @@ Have a nice day!' ))
     if command == '/get':
         try:
             thread.start_new_thread(temp, (user_id, thermo))
-            success(name)
+            #success(name)
     	except:
             print('Exception caught!')
         return
@@ -230,26 +271,26 @@ Have a nice day!' ))
     #TEMPERATURE
     if command == '/gettemp':
         try:
-            aver = (thermo[0]+thermo[1]+thermo[2]+thermo[3]+thermo[4])/5
-            averround = pround(aver)
-            thread.start_new_thread(sms, (user_id, 'Temperature : {} °C'.format(averround)))
+            #aver = (thermo[0]+thermo[1]+thermo[2]+thermo[3]+thermo[4])/5
+            #averround = pround(aver)
+            thread.start_new_thread(sms, (user_id, 'Temperature : {} °C'.format(pround((thermo[0]+thermo[1]+thermo[2]+thermo[3]+thermo[4])/5))))
         except:
             print('Exception caught!')
         return
     
     #BOT RESPONSE
     try:
-        response = cb.say(command).encode('utf-8')
-        thread.start_new_thread(sms, (user_id, response))
+        #response = cb.say(command).encode('utf-8')
+        thread.start_new_thread(sms, (user_id, cb.say(command).encode('utf-8')))
         print ('SandyPI: {}'.format(response))
     except:
         print('Exception caught!')
 
     #SAVE TO FILE
     with open('SPI.txt', 'a') as file:
-        now = datetime.now()
-        file.write('[{}:{}] {} : {}\n'.format(now.hour, now.minute, name, command))
-        file.write('[{}:{}] SandyPI: {}\n'.format(now.hour, now.minute, response))
+        #now = datetime.now()
+        file.write('[{}:{}] {} : {}\n'.format(datetime.now().hour, datetime.now().minute, name, command))
+        file.write('[{}:{}] SandyPI: {}\n'.format(datetime.now().hour, datetime.now().minute, response))
 
 #bot.getUpdates(timeout=50)    
 #bot.message_loop(handle), it's multithreading
@@ -261,6 +302,7 @@ while 1:
     #getrawback()
     thread.start_new_thread(getraw, ())
     thread.start_new_thread(sosf, ())
+    thread.start_new_thread(warning, ())
     #bot.getUpdates()
     #for i in range (0, 4):
     #    if (thermo[i] > sos):
