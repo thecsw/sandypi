@@ -8,7 +8,7 @@
 - Also this bot uses sensehat to collect data from humidity and pressure sensors.
 - All this is sent via telegram to multiple users.
 - To test it add the bot to your telegram --> telegram.me/pisandy_bot
-##### Sometimes it can be offline, no worries, most of the time it's working 24/7.
+### Sometimes it can be offline, no worries, most of the time it's working 24/7.
 - This bot has been heavily modified as RGB bulb has been added.
 - This LGB bulb is showing green when the T < 26, yellow when 26 < T < 30 and red when T > 30.
 - Use it as an easy-to-unserstand script so you can build your own.
