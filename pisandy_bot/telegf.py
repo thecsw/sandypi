@@ -13,7 +13,8 @@ from datetime import datetime
 #Telegram API
 import telepot
 from telepot.loop import MessageLoop
-#from telepot.loop import OrderedWebhook
+from telepot.loop import OrderedWebhook
+from telepot.loop import Webhook
 #Talking bot
 import cleverbot
 #SenseHat
@@ -24,6 +25,8 @@ import thread
 #RGB bulb
 import RPi.GPIO as GPIO
 
+#from Flask import Flask, request
+
 #Initializing sensehat
 sense = SenseHat()
 
@@ -31,20 +34,19 @@ sense = SenseHat()
 os.system('modprobe w1-gpio')
 os.system('modprobe w1-therm')
 
-#Not needed, as now there are different files
 #Entering first line of the log data
-#with open('SPI.txt', 'a') as file:
-#    file.write('SandyPI. Cleverbot conversation.\n')
+with open('SPI.txt', 'a') as file:
+    file.write('SandyPI. Cleverbot conversation.\n')
  
 #Entering bots Telegram API key
-telekey = 'YOUR API KEY'
+telekey = '439816740:AAGUv-uFga0Vf7XX9-yTPADabX6Eiuf_Bwg'
 bot = telepot.Bot(telekey)
 
 #Getting bot specification
 bot.getMe()
 
 #Initializing the cleverbot
-cleverkey = 'CLEVERBOT API KEY'
+cleverkey = '6c3f005ec8f79dd543c7cca772a75fa9'
 cb = cleverbot.Cleverbot(cleverkey, timeout=60)
 cb.reset()
 
@@ -117,11 +119,11 @@ def warning ():
     aver = (thermo[0]+thermo[1]+thermo[2]+thermo[3]+thermo[4])/5
     averround = pround(aver)
     if averround < 30:
-		if averround > 26:
+	if averround > 26:
             MULTOUTPUT(RED, GREEN)
-	    	return	
+	    return	
         OUTPUT(GREEN)
-		return
+	return
     OUTPUT(RED)
     return
 
@@ -145,7 +147,7 @@ def sms_delay(sec, ID, strg):
     sleep(DELAY)
     sms(ID, strg) 
 
-thermo = [3.14,2.71,1.41,-1,10]
+thermo = [2,2,2,2,2]
 #Getting data
 def getraw():
     global thermo
@@ -173,23 +175,20 @@ Third :     {} °C\n\
 Fourth :  {} °C\n\
 Fifth :      {} °C\n\
 \n\
-Humidity : {} %rH\n\ 
+Humidity : {} %rH\n\
 Pressure : {} Millibars'.\
         format(thermo[0], thermo[1], thermo[2], thermo[3], thermo[4], humidity, pressure))
     sms(ID, 'This bot is showing temperature, humidity and pressure of air \n\
 from my room using raspberry pi with Sense HAT\n\
 and 5 DS18B20 temperature sensors')
-
 #Handling the messages
 def handle(msg):
     #chat_id = msg['chat']['id']
     user_id = msg['from']['id']
     name = msg['chat']['first_name'].encode('utf-8')
     #lastname = msg['chat']['last_name']
-    #If a user doesn't have last name -> runtime error
     command = msg['text'].encode('utf-8')
     print ('[ {} ] {} : {}'.format(user_id, name, command))
-    
     #START
     if command == '/start':
         try:
@@ -291,7 +290,7 @@ Have a nice day!' ))
         print('Exception caught!')
 
     #SAVE TO FILE
-    with open('{}.txt'.format(name), 'a') as file:
+    with open('SPI.txt', 'a') as file:
         #now = datetime.now()
         file.write('[{}:{}] {} : {}\n'.format(datetime.now().hour, datetime.now().minute, name, command))
         file.write('[{}:{}] SandyPI: {}\n'.format(datetime.now().hour, datetime.now().minute, response))
@@ -299,9 +298,21 @@ Have a nice day!' ))
 #bot.getUpdates(timeout=50)    
 #bot.message_loop(handle), it's multithreading
 MessageLoop(bot, handle).run_as_thread()
+#MessageLoop(bot, handle).run_forever()
+#Webhook(bot, handle).run_as_thread()
+#app = Flask(__name__)
+#app.run(port=5000, debug=True)
+#webhook = OrderedWebhook(bot, handle)
+#webhook.run_as_thread()
 
 while 1:
+    #thermo= [read_temp(0), read_temp(2), read_temp(4), read_temp(3), read_temp(1)]
+    #getrawback()
     thread.start_new_thread(getraw, ())
     thread.start_new_thread(sosf, ())
     thread.start_new_thread(warning, ())
+    #bot.getUpdates()
+    #for i in range (0, 4):
+    #    if (thermo[i] > sos):
+    #        sms(296211623, 'SOS! Sensor #{} measurement is higer than {} °C'.format(i+1, sos))
     time.sleep(8)
