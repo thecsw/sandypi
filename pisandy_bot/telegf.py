@@ -39,14 +39,14 @@ with open('SPI.txt', 'a') as file:
     file.write('SandyPI. Cleverbot conversation.\n')
  
 #Entering bots Telegram API key
-telekey = '439816740:AAGUv-uFga0Vf7XX9-yTPADabX6Eiuf_Bwg'
+telekey = 'TELEGRAM BOT API KEY'
 bot = telepot.Bot(telekey)
 
 #Getting bot specification
 bot.getMe()
 
 #Initializing the cleverbot
-cleverkey = '6c3f005ec8f79dd543c7cca772a75fa9'
+cleverkey = 'CLEVERBOT API KEY'
 cb = cleverbot.Cleverbot(cleverkey, timeout=60)
 cb.reset()
 
@@ -132,7 +132,7 @@ def sosf():
     global thermo
     for i in range (0, 5):
         if (thermo[i] > sos):
-            sms(296211623, 'SOS! Sensor #{} measurement is higer than {} °C'.format(i+1, sos))
+            sms('UOUR TELEGRAM ID', 'SOS! Sensor #{} measurement is higer than {} °C'.format(i+1, sos))
 
 #round up
 def pround(arg):
