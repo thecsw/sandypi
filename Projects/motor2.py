@@ -1,4 +1,6 @@
 #!/usr/bin/python
+#I don't know
+#This is for the step motor, but I didnt research the thing well
 import RPi.GPIO as GPIO
 import time
 
