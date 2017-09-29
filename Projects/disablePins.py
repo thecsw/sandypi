@@ -1,3 +1,4 @@
+#This sript just disables current on all raspberry pi pins
 import RPi.GPIO as GPIO
 GPIO.setmode(GPIO.BCM)
 
