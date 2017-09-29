@@ -1,4 +1,7 @@
 #!/usr/bin/python
+#well, this script scans for bluetooth devices (MAC ADDRESSES)
+#if the bluetooth device is found then the device is at home(in range)
+
 
 import bluetooth
 import time
