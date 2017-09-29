@@ -37,21 +37,21 @@ os.system('modprobe w1-therm')
 #Entering first line of the log data
 with open('SPI.txt', 'a') as file:
     file.write('SandyPI. Cleverbot conversation.\n')
- 
+
 #Entering bots Telegram API key
-telekey = 'TELEGRAM BOT API KEY'
+telekey = 'TEELGRAM API KEY'
 bot = telepot.Bot(telekey)
 
 #Getting bot specification
 bot.getMe()
 
 #Initializing the cleverbot
-cleverkey = 'CLEVERBOT API KEY'
+cleverkey = 'CLVERBOT API KEY'
 cb = cleverbot.Cleverbot(cleverkey, timeout=60)
 cb.reset()
 
 #Array of sensors raw  data
-thermo = [0,0,0,0,0]
+thermo = [3.14, 2.71, 1.41, 1, 0]
 
 #RGB
 BLUE = 21
@@ -98,6 +98,9 @@ rpoint = 10;
 #templimit
 sos = 30;
 
+#warming counter
+warningCounter = 0
+
 #RGB Color function
 def OUTPUT (COLOR):
     GPIO.output(BLUE, False)
@@ -121,18 +124,33 @@ def warning ():
     if averround < 30:
 	if averround > 26:
             MULTOUTPUT(RED, GREEN)
-	    return	
+	    return
         OUTPUT(GREEN)
 	return
     OUTPUT(RED)
     return
 
+#DEW POINT
+def dewgamma():
+    b = 18.678
+    c = 257.14
+    RH = sense.get_humidity()
+    global thermo
+    T = (thermo[0]+thermo[1]+thermo[2]+thermo[3]+thermo[4])/5
+    g = math.log(RH / 100) + ( (b * T) / (c + T) )
+    result = (c * g) / (b - g)
+    return result
+
 #SOS function
 def sosf():
     global thermo
+    global warningCounter
     for i in range (0, 5):
-        if (thermo[i] > sos):
-            sms('UOUR TELEGRAM ID', 'SOS! Sensor #{} measurement is higer than {} °C'.format(i+1, sos))
+        if (thermo[i] > sos) and warningCounter < 5:
+            sms(296211623, 'SOS! Sensor #{} measurement is higer than {} °C'.format(i+1, sos))
+            warningCounter = warningCounter + 1
+        else:
+            warningCounter = 0
 
 #round up
 def pround(arg):
@@ -142,12 +160,14 @@ def pround(arg):
 def sms(ID, str):
     bot.sendMessage(ID, str)
 
+def reply(ID, msgID, str):
+    bot.sendMessage(ID, str, None, None, None, msgID)
+
 # Send meessage with delay
 def sms_delay(sec, ID, strg):
     sleep(DELAY)
-    sms(ID, strg) 
+    sms(ID, strg)
 
-thermo = [2,2,2,2,2]
 #Getting data
 def getraw():
     global thermo
@@ -161,12 +181,12 @@ def sleep(secs):
 def temp(ID, thermo):
     humidity = pround(sense.get_humidity())
     pressure = pround(sense.get_pressure())
-    
-    sms_delay(1, ID, 'Connecting to host...') 
-    sms_delay(1, ID, 'Sending request...') 
-    sms_delay(1, ID, 'Receiving some weird numbers...') 
-    sms_delay(1, ID, 'Trying to resolve...') 
-    sms_delay(1, ID, 'Uploading results...') 
+
+    sms_delay(1, ID, 'Connecting to host...')
+    sms_delay(1, ID, 'Sending request...')
+    sms_delay(1, ID, 'Receiving some weird numbers...')
+    sms_delay(1, ID, 'Trying to resolve...')
+    sms_delay(1, ID, 'Uploading results...')
 
     sms(ID, 'Measurements from temperature sensors\n\
 First :      {} °C\n\
@@ -181,11 +201,16 @@ Pressure : {} Millibars'.\
     sms(ID, 'This bot is showing temperature, humidity and pressure of air \n\
 from my room using raspberry pi with Sense HAT\n\
 and 5 DS18B20 temperature sensors')
+
 #Handling the messages
 def handle(msg):
-    #chat_id = msg['chat']['id']
-    user_id = msg['from']['id']
+    user_id = msg['chat']['id']
+    msg_id = msg['message_id']
+    #user_id = msg['from']['chat_id']
+    #if msg['chat']['type'] != 'group'
     name = msg['chat']['first_name'].encode('utf-8')
+    #else name = "GROUP"
+    #name = 'Somebody'
     #lastname = msg['chat']['last_name']
     command = msg['text'].encode('utf-8')
     print ('[ {} ] {} : {}'.format(user_id, name, command))
@@ -200,7 +225,7 @@ Have a nice day!' ))
         except:
             print('Exception caught!')
         return
-    
+
     #HUMIDITY
     if command == '/gethumidity':
         try:
@@ -209,6 +234,15 @@ Have a nice day!' ))
         except:
             print('Exception caught!')
     	return
+
+    #DEW POINT
+    if command == '/getdew':
+        try:
+            dew = dewgamma()
+            thread.start_new_thread(sms, (user_id, 'Dew Point : {} °C'.format(pround(dew))))
+        except:
+	   print('Exception caught!')
+	return
 
     #PRESSURE
     if command == '/getpressure':
@@ -227,6 +261,7 @@ Have a nice day!' ))
 /gettemp to get mean temperature\n\
 /gethumidity to get humidity level\n\
 /getpressure to get pressure level\n\
+/getdew to get the dew point\n\
 /help to get this help screen\n\
 /time to get current time (local)\n'))
 	except:
@@ -249,7 +284,7 @@ Have a nice day!' ))
         except:
             print('Exception caught!')
         return
-      
+
     #RESETBOT
     if command == '/resetbot':
         try:
@@ -258,10 +293,10 @@ Have a nice day!' ))
         except:
             print('Exception caught!')
         return
-    
+
     #SENSORSRAW
     #thermo= [read_temp(0), read_temp(2), read_temp(4), read_temp(3), read_temp(1)]
-    
+
     #FULL DATA
     if command == '/get':
         try:
@@ -280,11 +315,13 @@ Have a nice day!' ))
         except:
             print('Exception caught!')
         return
-    
+
     #BOT RESPONSE
     try:
-        #response = cb.say(command).encode('utf-8')
-        thread.start_new_thread(sms, (user_id, cb.say(command).encode('utf-8')))
+        response = cb.say(command).encode('utf-8')
+        thread.start_new_thread(reply, (user_id, msg_id, response))
+        #thread.start_new_thread(sms, (user_id, response))
+        #bot.sendMessage(user_id, response, None, None, None, msg_id)
         print ('SandyPI: {}'.format(response))
     except:
         print('Exception caught!')
@@ -295,7 +332,7 @@ Have a nice day!' ))
         file.write('[{}:{}] {} : {}\n'.format(datetime.now().hour, datetime.now().minute, name, command))
         file.write('[{}:{}] SandyPI: {}\n'.format(datetime.now().hour, datetime.now().minute, response))
 
-#bot.getUpdates(timeout=50)    
+#bot.getUpdates(timeout=50)
 #bot.message_loop(handle), it's multithreading
 MessageLoop(bot, handle).run_as_thread()
 #MessageLoop(bot, handle).run_forever()
@@ -311,6 +348,10 @@ while 1:
     thread.start_new_thread(getraw, ())
     thread.start_new_thread(sosf, ())
     thread.start_new_thread(warning, ())
+    try:
+        bot.getMe()
+    except:
+        print('EXCEPTION GETME')
     #bot.getUpdates()
     #for i in range (0, 4):
     #    if (thermo[i] > sos):
