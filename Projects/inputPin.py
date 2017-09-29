@@ -1,3 +1,5 @@
+#I think this is my first script for raspberry pi
+#this just sends some current to i pin for 10 seconds and the turns off
 import RPi.GPIO as GPIO
 import time
 
