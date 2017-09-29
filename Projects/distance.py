@@ -4,6 +4,7 @@ import time
 
 GPIO.setmode(GPIO.BCM)
 
+#The trig and echo pin
 TRIG = 23
 ECHO = 24
 
