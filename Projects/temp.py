@@ -1,4 +1,5 @@
 #DS18B20 sensors
+# This script takes measurement from all connected w1 devices in 4th pin
 import os
 import glob
 import time
