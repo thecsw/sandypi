@@ -13,19 +13,17 @@ from datetime import datetime
 #Telegram API
 import telepot
 from telepot.loop import MessageLoop
-from telepot.loop import OrderedWebhook
-from telepot.loop import Webhook
 #Talking bot
 import cleverbot
 #SenseHat
 from sense_hat import SenseHat
 #Multiple function simultaneously
-#import threading
 import thread
 #RGB bulb
 import RPi.GPIO as GPIO
 
-#from Flask import Flask, request
+#Array of sensors raw  data
+thermo = [3.14, 2.71, 1.41, 1, 0]
 
 #Initializing sensehat
 sense = SenseHat()
@@ -39,19 +37,16 @@ with open('SPI.txt', 'a') as file:
     file.write('SandyPI. Cleverbot conversation.\n')
 
 #Entering bots Telegram API key
-telekey = 'TEELGRAM API KEY'
+telekey = ''
 bot = telepot.Bot(telekey)
 
 #Getting bot specification
 bot.getMe()
 
 #Initializing the cleverbot
-cleverkey = 'CLVERBOT API KEY'
+cleverkey = ''
 cb = cleverbot.Cleverbot(cleverkey, timeout=60)
 cb.reset()
-
-#Array of sensors raw  data
-thermo = [3.14, 2.71, 1.41, 1, 0]
 
 #RGB
 BLUE = 21
@@ -92,9 +87,6 @@ def read_temp(NUMBER):
 #Just Delay
 DELAY = 0.5;
 
-#ROUNDPOINT
-rpoint = 10;
-
 #templimit
 sos = 30;
 
@@ -119,8 +111,7 @@ def MULTOUTPUT (COLOR, COLORS):
     return
 
 def warning ():
-    aver = (thermo[0]+thermo[1]+thermo[2]+thermo[3]+thermo[4])/5
-    averround = pround(aver)
+    averround = round(average(thermo), 2)
     if averround < 30:
 	if averround > 26:
             MULTOUTPUT(RED, GREEN)
@@ -136,6 +127,7 @@ def dewgamma():
     c = 257.14
     RH = sense.get_humidity()
     global thermo
+    #Below goes just the dew point formula with +-0.1C uncertainty
     T = (thermo[0]+thermo[1]+thermo[2]+thermo[3]+thermo[4])/5
     g = math.log(RH / 100) + ( (b * T) / (c + T) )
     result = (c * g) / (b - g)
@@ -151,10 +143,6 @@ def sosf():
             warningCounter = warningCounter + 1
         else:
             warningCounter = 0
-
-#round up
-def pround(arg):
-    return math.ceil(arg*rpoint)/rpoint
 
 # Send message from bot
 def sms(ID, str):
@@ -173,14 +161,29 @@ def getraw():
     global thermo
     thermo = [read_temp(0), read_temp(2), read_temp(4), read_temp(3), read_temp(1)]
 
+#Calculate average of an array with n elements
+def average(arr):
+    sum = 0
+    for i in range(0, len(arr)):
+	sum = sum + arr[i]
+    result = sum / len(arr)
+    return result
+
+#Calculate standard deviation
+def standard_dev(arr):
+    sum = 0
+    for i in range(0, len(arr)):
+	sum = sum + math.pow((arr[i] - average(arr)), 2)
+    return math.sqrt(sum / (len(arr) - 1))
+
 #Sleep function
 def sleep(secs):
     time.sleep(secs)
 
 #The whole data printing function
 def temp(ID, thermo):
-    humidity = pround(sense.get_humidity())
-    pressure = pround(sense.get_pressure())
+    humidity = round(sense.get_humidity(), 2)
+    pressure = round(sense.get_pressure(), 2)
 
     sms_delay(1, ID, 'Connecting to host...')
     sms_delay(1, ID, 'Sending request...')
@@ -207,11 +210,11 @@ def handle(msg):
     user_id = msg['chat']['id']
     msg_id = msg['message_id']
     #user_id = msg['from']['chat_id']
-    #if msg['chat']['type'] != 'group'
     name = msg['chat']['first_name'].encode('utf-8')
-    #else name = "GROUP"
-    #name = 'Somebody'
-    #lastname = msg['chat']['last_name']
+    try:
+        lastname = msg['chat']['last_name'].encode('utf-8')
+    except:
+	print("The user - [{}] doesn't have lastname".format(user_id))
     command = msg['text'].encode('utf-8')
     print ('[ {} ] {} : {}'.format(user_id, name, command))
     #START
@@ -230,7 +233,7 @@ Have a nice day!' ))
     if command == '/gethumidity':
         try:
             #humidity = pround(sense.get_humidity())
-            thread.start_new_thread(sms, (user_id, 'Humidity : {} %rH'.format(pround(sense.get_humidity()))))
+            thread.start_new_thread(sms, (user_id, 'Humidity : {} %rH'.format(round(sense.get_humidity(), 2))))
         except:
             print('Exception caught!')
     	return
@@ -239,7 +242,7 @@ Have a nice day!' ))
     if command == '/getdew':
         try:
             dew = dewgamma()
-            thread.start_new_thread(sms, (user_id, 'Dew Point : {} °C'.format(pround(dew))))
+            thread.start_new_thread(sms, (user_id, 'Dew Point : {} °C'.format(round(dew, 2))))
         except:
 	   print('Exception caught!')
 	return
@@ -248,7 +251,7 @@ Have a nice day!' ))
     if command == '/getpressure':
         try:
             #pressure = pround(sense.get_pressure())
-            thread.start_new_thread(sms, (user_id, 'Pressure : {} Millibars'.format(pround(sense.get_pressure()))))
+            thread.start_new_thread(sms, (user_id, 'Pressure : {} Millibars'.format(round(sense.get_pressure(), 2))))
         except:
             print('Exception caught!')
         return
@@ -294,14 +297,10 @@ Have a nice day!' ))
             print('Exception caught!')
         return
 
-    #SENSORSRAW
-    #thermo= [read_temp(0), read_temp(2), read_temp(4), read_temp(3), read_temp(1)]
-
     #FULL DATA
     if command == '/get':
         try:
             thread.start_new_thread(temp, (user_id, thermo))
-            #success(name)
     	except:
             print('Exception caught!')
         return
@@ -309,9 +308,10 @@ Have a nice day!' ))
     #TEMPERATURE
     if command == '/gettemp':
         try:
-            #aver = (thermo[0]+thermo[1]+thermo[2]+thermo[3]+thermo[4])/5
-            #averround = pround(aver)
-            thread.start_new_thread(sms, (user_id, 'Temperature : {} °C'.format(pround((thermo[0]+thermo[1]+thermo[2]+thermo[3]+thermo[4])/5))))
+            thread.start_new_thread(sms, (user_id, 'Temperature :\n\
+Celcius - {} °C\n\
+Fahrenheit - {} °F\n\
+Kelvin - {} K'.format(round(average(thermo), 1), round(average(thermo)*1.8+32, 1), round(average(thermo), 1)+273)))
         except:
             print('Exception caught!')
         return
@@ -320,8 +320,6 @@ Have a nice day!' ))
     try:
         response = cb.say(command).encode('utf-8')
         thread.start_new_thread(reply, (user_id, msg_id, response))
-        #thread.start_new_thread(sms, (user_id, response))
-        #bot.sendMessage(user_id, response, None, None, None, msg_id)
         print ('SandyPI: {}'.format(response))
     except:
         print('Exception caught!')
@@ -332,19 +330,10 @@ Have a nice day!' ))
         file.write('[{}:{}] {} : {}\n'.format(datetime.now().hour, datetime.now().minute, name, command))
         file.write('[{}:{}] SandyPI: {}\n'.format(datetime.now().hour, datetime.now().minute, response))
 
-#bot.getUpdates(timeout=50)
-#bot.message_loop(handle), it's multithreading
+        
 MessageLoop(bot, handle).run_as_thread()
-#MessageLoop(bot, handle).run_forever()
-#Webhook(bot, handle).run_as_thread()
-#app = Flask(__name__)
-#app.run(port=5000, debug=True)
-#webhook = OrderedWebhook(bot, handle)
-#webhook.run_as_thread()
 
 while 1:
-    #thermo= [read_temp(0), read_temp(2), read_temp(4), read_temp(3), read_temp(1)]
-    #getrawback()
     thread.start_new_thread(getraw, ())
     thread.start_new_thread(sosf, ())
     thread.start_new_thread(warning, ())
@@ -352,8 +341,4 @@ while 1:
         bot.getMe()
     except:
         print('EXCEPTION GETME')
-    #bot.getUpdates()
-    #for i in range (0, 4):
-    #    if (thermo[i] > sos):
-    #        sms(296211623, 'SOS! Sensor #{} measurement is higer than {} °C'.format(i+1, sos))
     time.sleep(8)
